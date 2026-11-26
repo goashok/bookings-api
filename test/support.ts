@@ -3,7 +3,7 @@
 // time: `vitest run --no-file-parallelism`), where requests really run side by side.
 
 import { PGlite, type Transaction } from '@electric-sql/pglite';
-import { afterAll, beforeEach } from 'vitest';
+import { afterAll, beforeAll, beforeEach } from 'vitest';
 import { buildApp } from '../src/app.ts';
 import { postgres, type Db } from '../src/db.ts';
 import { migrate } from '../src/migrate.ts';
@@ -39,11 +39,10 @@ export function setup() {
   };
   const clock = { now: NOW };
   const app = buildApp({ db, now: () => clock.now });
-  let ready: Promise<unknown> | undefined;
-
+  // Starting PGlite (compiling PostgreSQL to run in the process) can take several seconds on a
+  // slow machine: it happens here, once, with room to spare, not inside the first test's time.
+  beforeAll(() => migrate(db), 60_000);
   beforeEach(async () => {
-    ready ??= migrate(db);
-    await ready;
     await db.query('TRUNCATE venues, resources, bookings CASCADE');
     clock.now = NOW;
     latency.ms = 0;
