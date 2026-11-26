@@ -1,0 +1,41 @@
+# Cradleworks settings for this repository. Keys not set here come from the factory's defaults.
+project: bookings-api
+
+adapters:
+  scm: github             # the repository is taken from the git remote
+  ci: github-actions      # .github/workflows/ci.yml, which runs the tests on PostgreSQL
+  tracker: github-issues
+  sandbox: local-docker   # one container per task, from .factory/image
+  runtime: cli-agent
+
+runtime:
+  agent: claude-code
+  model: claude-sonnet-5-5
+
+stack:
+  # Built from .factory/image/Dockerfile:
+  #   docker build --build-context project=. -t cradleworks/bookings-api-dev:1 .factory/image
+  image: cradleworks/bookings-api-dev:1
+  build: npm ci --prefer-offline --no-audit --no-fund
+  typecheck: npm run typecheck
+  test: npm test
+
+context:
+  include: [src/, test/, migrations/, README.md, package.json]
+  rules: [.factory/rules/*.md]
+
+gates:
+  spec_approval: human
+  plan_check: ai
+  change_approval: human
+  auto_merge: false
+
+budgets:
+  per_task_usd: 5
+  max_rework_loops: 3
+
+sandbox:
+  network:
+    mode: allowlist
+    allow:
+      - registry.npmjs.org   # packages; the image already holds the ones package-lock.json names

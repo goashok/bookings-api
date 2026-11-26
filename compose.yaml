@@ -1,0 +1,10 @@
+# A PostgreSQL for running the API locally: `docker compose up -d`, then
+# DATABASE_URL=postgres://bookings:bookings@localhost:5433/bookings npm start
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: bookings
+      POSTGRES_PASSWORD: bookings
+      POSTGRES_DB: bookings
+    ports: ['5433:5432']
