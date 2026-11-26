@@ -10,7 +10,7 @@
 
 import type { FastifyInstance } from 'fastify';
 import type { Db } from './db.ts';
-import { conflict, notFound, ruleBroken } from './errors.ts';
+import { ApiError, conflict, notFound, ruleBroken } from './errors.ts';
 import { formatTime, isDate, localParts, parseTime, zonedInstant } from './time.ts';
 import { getResource, getVenue, idParams, type Venue } from './venues.ts';
 
@@ -135,6 +135,25 @@ export function bookingRoutes(app: FastifyInstance, db: Db, options: BookingOpti
         return booking(rows[0]!);
       });
       return reply.code(201).send(created);
+    },
+  );
+
+  app.get<{ Querystring: { guestEmail: string } }>(
+    '/bookings',
+    { schema: { querystring: { type: 'object', required: ['guestEmail'], properties: { guestEmail: { type: 'string', minLength: 1 } } } } },
+    async (req) => {
+      const guestEmail = req.query.guestEmail.trim();
+      if (!guestEmail) throw new ApiError(400, 'invalid_request', 'guestEmail must not be empty.');
+      const { rows } = await db.query<BookingRow & { venue_id: string; venue_name: string; time_zone: string; resource_name: string }>(
+        `SELECT b.*, v.id AS venue_id, v.name AS venue_name, v.time_zone, r.name AS resource_name
+         FROM bookings b JOIN resources r ON r.id = b.resource_id JOIN venues v ON v.id = r.venue_id
+         WHERE lower(b.guest_email) = lower($1) AND b.status = 'confirmed' AND b.ends_at > $2 ORDER BY b.starts_at, r.name, b.id`,
+        [guestEmail, options.now()],
+      );
+      return {
+        guestEmail,
+        bookings: rows.map((r) => ({ ...booking(r), venueId: r.venue_id, venueName: r.venue_name, resourceName: r.resource_name, timeZone: r.time_zone })),
+      };
     },
   );
 

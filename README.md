@@ -41,6 +41,7 @@ Request and response bodies are JSON. Times are instants with an offset
 | `POST /venues/:id/resources` | `{ name, capacity }`: a table, room or court in the venue |
 | `GET /venues/:id/resources` | the venue's resources, by name |
 | `POST /bookings` | `{ resourceId, guestName, guestEmail, partySize, startsAt, endsAt }` |
+| `GET /bookings?guestEmail=` | the guest's confirmed bookings that haven't ended, soonest first, with venue and resource names and the venue's time zone |
 | `GET /bookings/:id` | a booking |
 | `POST /bookings/:id/cancel` | cancels a confirmed booking |
 | `GET /venues/:id/bookings?date=YYYY-MM-DD` | the confirmed bookings starting on that local day |
